@@ -2,10 +2,10 @@
 
 ## Overview 
 
-[List of vectorestores](https://python.langchain.com/en/latest/modules/indexes/vectorstores.html)
+[List of vectorstores](https://python.langchain.com/en/latest/modules/indexes/vectorstores.html)
 
 We will experiment with two databases
-### Chroma {#chroma .unnumbered}
+### Chroma 
 
 [Chroma](https://docs.trychroma.com/) is the open-source embedding database. Chroma makes it easy to build LLM apps by making knowledge, facts, and skills pluggable for LLMs. Chroma gives you the tools to:
 
@@ -20,7 +20,7 @@ Chroma prioritizes:
 -   it also happens to be very quick
 
 
-### Qdrant {#qdrant .unnumbered}
+### Qdrant 
 
 [Qdrant](https://qdrant.tech/documentation/) is powering the next generation of AI applications with advanced and high-performant vector similarity search technology. 
 
