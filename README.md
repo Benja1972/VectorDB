@@ -1,53 +1,38 @@
-::: flushleft
-The post does not include neural search frameworks (like Jina.AI, FAISS or deepset's Haystack).
-:::
+# Vector Databases experiments
 
-::: flushleft
+## Overview 
+
 [List of vectorestores](https://python.langchain.com/en/latest/modules/indexes/vectorstores.html)
-:::
 
-# Chroma {#chroma .unnumbered}
+We will experiment with two databases
+### Chroma {#chroma .unnumbered}
 
 [Chroma](https://docs.trychroma.com/) is the open-source embedding database. Chroma makes it easy to build LLM apps by making knowledge, facts, and skills pluggable for LLMs. Chroma gives you the tools to:
 
 -   store embeddings and their metadata
-
 -   embed documents and queries
-
 -   search embeddings
 
 Chroma prioritizes:
 
 -   simplicity and developer productivity
-
 -   analysis on top of search
-
 -   it also happens to be very quick
 
-# Weaviate {#weaviate .unnumbered}
 
-# ElasticSearch {#elasticsearch .unnumbered}
+### Qdrant {#qdrant .unnumbered}
 
-# OpenSearch {#opensearch .unnumbered}
+[Qdrant](https://qdrant.tech/documentation/) is powering the next generation of AI applications with advanced and high-performant vector similarity search technology. 
 
-# Milvus {#milvus .unnumbered}
+Qdrant is a vector database & vector similarity search engine. It deploys as an API service providing search for the nearest high-dimensional vectors. With Qdrant, embeddings or neural network encoders can be turned into full-fledged applications for matching, searching, recommending, and much more!
 
-# Qdrant {#qdrant .unnumbered}
+ - Easy to Use API. Provides the OpenAPI v3 specification to generate a client library in almost any programming language. Alternatively utilize ready-made client for Python or other programming languages with additional functionality.
+ - Fast and Accurate. Implement a unique custom modification of the HNSW algorithm for Approximate Nearest Neighbor Search. Search with a State-of-the-Art speed and apply search filters without compromising on results.
+ - Filtrable. Support additional payload associated with vectors. Not only stores payload but also allows filter results based on payload values. Unlike Elasticsearch post-filtering, Qdrant guarantees all relevant vectors are retrieved.
 
-# Annoy {#annoy .unnumbered}
+ ## Use-cases 
+  - [Chroma DB for taxonomy embedding](Chroma_taxonomy.md)
+  - [Chroma DB for Matching KG](Chroma_kg.md)
+  - [Qdrant DB for Matching KG](Qdrant_kg.md)
 
-[Annoy](https://github.com/spotify/annoy)
 
-# AtlasDB {#atlasdb .unnumbered}
-
-# Deep Lake {#deep-lake .unnumbered}
-
-# PGVector {#pgvector .unnumbered}
-
-# Pinecone {#pinecone .unnumbered}
-
-# Redis {#redis .unnumbered}
-
-# SupabaseVectorStore {#supabasevectorstore .unnumbered}
-
-# Zilliz {#zilliz .unnumbered}

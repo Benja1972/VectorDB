@@ -2,7 +2,7 @@
 
 import chromadb
 from chromadb.config import Settings
-# ~ from chromadb.utils import embedding_functions
+from chromadb.utils import embedding_functions
 
 
 # ~ from sentence_transformers import util 
@@ -14,8 +14,6 @@ def norm(x):
 
 ## == Connect ===========
 from secrets import *
-
-
 
 
 ### Query List ==================
@@ -57,15 +55,6 @@ RETURN Id(c) AS ID,
 """
 
 
-META = """
-MATCH (c:organization)
-RETURN Id(c) AS ID, 
-        c.country_code_a3           AS   country_code,
-        c.stage                     AS   stage
-       SKIP $skp LIMIT $topn
-"""
-
-
 
 GETMAX = """
 MATCH (c:organization)
@@ -87,14 +76,105 @@ RETURN Id(c) AS ID, c.name AS name, c.full_description AS description
 
 ### ==========================
 
+attrb = [
+    "board_members_exits_count",
+    "deg_people",
+    "employee_count",
+    "founder_count",
+    "founders_exits_count",
+    "masters_ratio",
+    "phd_ratio",
+    "team_score",
+    "team_size_yoy"
+]
+
+# ~ max_values = dict()
+# ~ for att in attrb:
+    # ~ qr = GETMAX.replace("ATTRIBUTE",att)
+    # ~ att_max =  graph.run(qr).data()
+    # ~ print(f"Max value {att}: {att_max}")
+    # ~ max_values[att] = float(att_max[0]["max"])
+
+max_values = {'board_members_exits_count': 198.0,
+             'deg_people': 128920.0,
+             'employee_count': 4998.0,
+             'founder_count': 1088.0,
+             'founders_exits_count': 72.0,
+             'masters_ratio': 1.0,
+             'phd_ratio': 1.0,
+             'team_score': 721.8240662984739,
+             'team_size_yoy': 104.0}
+
+graph = neoGraph(NEO4J_LINK, auth=NEO4J_AUTH, name=NEO4J_DATABASE)
+
+
+chroma_client = chromadb.Client(Settings(
+                        chroma_db_impl="duckdb+parquet",
+                        persist_directory=".chromaDB"))
+
+collectTE = chroma_client.create_collection(name="team_graph")
+
+
+num_comp =  1000#graph.run(CNT).data()[0]["cnt"]
+topN = 10
+
+for sk in range(0,num_comp,topN):
+    team =  graph.run(TEAM, skp=sk,topn=topN ).to_data_frame()
+
+    team["employee_count_range"] = team["employee_count_range"].fillna("unknown")
+    team["employee_count_range"] = team["employee_count_range"].apply(map_range)
+
+    team = team.fillna(0)
+    for att in max_values.keys():
+        v = max_values[att]
+        team[att] = team[att]/v
+        team[att] = team[att].apply(norm)
+
+
+    iDs = list(team["ID"].astype("str"))
+    team.set_index("ID", inplace=True)
+    embd = team.to_numpy()
+    embd = embd.tolist()
+    
+    collectTE.add(
+        embeddings=embd,
+        ids=iDs
+    )
+    
+    print(iDs)
+    print(embd)
+
+chroma_client.persist()
 
 
 
 
 
+CREATE = False
+
+if CREATE:
+
+    # ~ chroma_client = chromadb.Client(Settings(
+                            # ~ chroma_db_impl="duckdb+parquet",
+                            # ~ persist_directory=".chromaDB"))
+
+    # ~ collectTE = chroma_client.create_collection(name="team_graph", embedding_function=st_model)
+    num_comp =  graph.run(CNT).data()[0]["cnt"]
+    topN = 100000
+
+    for sk in range(0,num_comp,topN):
+        res = graph.run(LIST, topn=topN, skp = sk).to_data_frame()
+        # ~ collectTE.add(
+                # ~ embeddings=list(res["embedding"]),
+                # ~ ids=list(res["ID"].astype("str")))
+        print(f"Embeded {len(res)} companies starting from {sk}  \n")
+        del res
+
+    # ~ chroma_client.persist()
 
 
-#### Functions ===================
+
+
 
 # ~ @st.cache_resource
 def load_DB():
@@ -102,10 +182,13 @@ def load_DB():
                             chroma_db_impl="duckdb+parquet",
                             persist_directory=".chromaDB"))
     
-    collectTE = chroma_client.get_collection(name="team_graph")
+    collectTE = chroma_client.get_collection(name="match_graph", embedding_function=st_model)
     return collectTE
 
-
+# Use collection
+# ~ USE = not CREATE
+# ~ if USE:
+    # ~ collectTE = load_DB()
 
  
 
@@ -120,11 +203,9 @@ def search_company(collectTE,txt, topN=5):
     
 
 
-def get_similar(collectTE,iD, topN=5, where=None):
+def get_similar(collectTE,iD, topN=5):
     em = np.array(collectTE.get(ids= [str(iD)], include = ["embeddings"])["embeddings"][0])
-    top = collectTE.query(query_embeddings= [em],
-                          where = where,
-                          n_results=topN)
+    top = collectTE.query(query_embeddings= [em], n_results=topN)
     out = {int(k): top["distances"][0][i] for i,k in enumerate(top["ids"][0])}
     
     ls = list(out.keys())
@@ -164,94 +245,3 @@ def get_top_scores(collectTE,collectNE,iD, topN):
     scN = util.pytorch_cos_sim(emNE, uN).numpy()
     return {'ids':unn, "text_score":scT, "node_score":scN} 
 
-
-
-#### ==============================
-
-
-
-graph = neoGraph(NEO4J_LINK, auth=NEO4J_AUTH, name=NEO4J_DATABASE)
-
-
-
-
-
-UPDATE = False
-
-if UPDATE:
-    chroma_client = chromadb.Client(Settings(
-                             chroma_db_impl="duckdb+parquet",
-                             persist_directory=".chromaDB"))
-
-    # ~ collectTE = chroma_client.get_collection(name="match_graph")
-    collectTE = chroma_client.get_collection(name="team_graph")
-
-
-    num_comp =  graph.run(CNT).data()[0]["cnt"]
-    topN = 10000
-
-    for sk in range(0,num_comp,topN):
-        team =  graph.run(META, skp=sk,topn=topN ).data()
-        iDs = [t.pop("ID") for t in team]
-        iDs = [str(i) for i in iDs]
-        
-        team = [{k:str(v) for k,v in dt.items()} for dt in team]
-
-        collectTE.update(
-                        ids=iDs,
-                        metadatas= team,
-                    )
-
-
-        
-        print(f"Embeded {len(team)} companies starting from {sk}  \n")
-
-
-    chroma_client.persist()
-
-
-
-
-
-
-
-
-
-
-
-
-# Use collection
-USE = not UPDATE
-if USE:
-    collectTE = load_DB()
-
-
-
-codes = ["FRA","USA","NLD"]
-stages = ["Early","Growth"]
-
-
-
-def form_filter(a,b):
-    fa = {"$or": [{"country_code":c} for c in a]}
-    fb = {"$or": [{"stage":c} for c in b]}
-
-    return {"$and":[fa,fb]}
-
-
-
-filter = form_filter(codes,stages)
-
-# ~ filter = {
-    # ~ "$and": [
-        # ~ {
-            # ~ "country_code": code
-        # ~ },
-        # ~ {
-            # ~ "stage": stage
-        # ~ }
-    # ~ ]
-# ~ }
-
-
-sm =  get_similar(collectTE,2165595, topN=20, where=filter)
